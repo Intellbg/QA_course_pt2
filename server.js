@@ -13,6 +13,7 @@ fccTesting(app); //For FCC testing purposes
 app.use('/public', express.static(process.cwd() + '/public'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+const LocalStrategy = require('passport-local');
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
@@ -26,16 +27,34 @@ passport.session()
 
 myDB(async client => {
   const myDataBase = await client.db('database').collection('users');
-
+passport.use(new LocalStrategy((username, password, done) => {
+  myDataBase.findOne({ username: username }, (err, user) => {
+    console.log(`User ${username} attempted to log in.`);
+    if (err) return done(err);
+    if (!user) return done(null, false);
+    if (password !== user.password) return done(null, false);
+    return done(null, user);
+  });
+}));
   // Be sure to change the title
   app.route('/').get((req, res) => {
     // Change the response to render the Pug template
     res.render('index', {
       title: 'Connected to Database',
-      message: 'Please login'
+      message: 'Please login',
+      showLogin: true
     });
   });
+  
+  app.route('/login ').post((req, res) => {  
+    passport.authenticate('local',{ failureRedirect: '/' })
+    res.redirect("/profile")
+  })
 
+  app.route('/profile').get((req, res) => {
+    res.render('profile');
+  });
+  
   // Serialization and deserialization here...
   passport.serializeUser((user, done) => {
     done(null, user._id);
@@ -51,6 +70,7 @@ myDB(async client => {
     res.render('index', { title: e, message: 'Unable to connect to database' });
   });
 });
+
 
 
 
