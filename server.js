@@ -42,7 +42,7 @@ myDB(async client => {
   });
   passport.deserializeUser((id, done) => {
     myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-      done(null, null);
+      done(null, doc)
     });
   });
   // Be sure to add this...
@@ -54,10 +54,6 @@ myDB(async client => {
 
 
 
-
-app.route('/').get((req, res) => {
-  res.render('index', { title: 'Hello', message: 'Please log in' });
-});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
