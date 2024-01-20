@@ -1,81 +1,99 @@
-'use strict';
-require('dotenv').config();
-const passport = require('passport')
-const session = require('express-session')
-const express = require('express');
-const myDB = require('./connection');
-const fccTesting = require('./freeCodeCamp/fcctesting.js');
-const { ObjectID } = require('mongodb');
+"use strict";
+require("dotenv").config();
+const passport = require("passport");
+const session = require("express-session");
+const express = require("express");
+const myDB = require("./connection");
+const fccTesting = require("./freeCodeCamp/fcctesting.js");
+const { ObjectID } = require("mongodb");
 const app = express();
-app.set('view engine', 'pug');
-app.set('views', './views/pug');
+const LocalStrategy = require("passport-local");
+
+function ensureAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/");
+}
+
+app.set("view engine", "pug");
+app.set("views", "./views/pug");
 fccTesting(app); //For FCC testing purposes
-app.use('/public', express.static(process.cwd() + '/public'));
+app.use("/public", express.static(process.cwd() + "/public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-const LocalStrategy = require('passport-local');
 
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: true,
-  saveUninitialized: true,
-  cookie: { secure: false }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: true,
+    saveUninitialized: true,
+    cookie: { secure: false },
+  })
+);
 
-passport.initialize()
-passport.session()
+passport.initialize();
+passport.session();
 
-myDB(async client => {
-  const myDataBase = await client.db('database').collection('users');
-passport.use(new LocalStrategy((username, password, done) => {
-  myDataBase.findOne({ username: username }, (err, user) => {
-    console.log(`User ${username} attempted to log in.`);
-    if (err) return done(err);
-    if (!user) return done(null, false);
-    if (password !== user.password) return done(null, false);
-    return done(null, user);
-  });
-}));
+myDB(async (client) => {
+  const myDataBase = await client.db("database").collection("users");
+  passport.use(
+    new LocalStrategy((username, password, done) => {
+      myDataBase.findOne({ username: username }, (err, user) => {
+        console.log(`User ${username} attempted to log in.`);
+        if (err) return done(err);
+        if (!user) return done(null, false);
+        if (password !== user.password) return done(null, false);
+        return done(null, user);
+      });
+    })
+  );
   // Be sure to change the title
-  app.route('/').get((req, res) => {
+  app.route("/").get((req, res) => {
     // Change the response to render the Pug template
-    res.render('index', {
-      title: 'Connected to Database',
-      message: 'Please login',
-      showLogin: true
+    res.render("index", {
+      title: "Connected to Database",
+      message: "Please login",
+      showLogin: true,
     });
   });
-  
-  app.route('/login ').post((req, res) => {  
-    passport.authenticate('local',{ failureRedirect: '/' })
-    res.redirect("/profile")
-  })
 
-  app.route('/profile').get((req, res) => {
-    res.render('profile');
+  app
+    .route("/login")
+    .post(
+      passport.authenticate("local", { failureRedirect: "/" }),
+      (req, res) => {
+        res.redirect("/profile");
+      }
+    );
+
+  app.route("/profile").get(ensureAuthenticated, (req, res) => {
+    res.render("profile", { username: req.user.username });
   });
-  
+  app.route("/logout").get((req, res) => {
+    req.logout();
+    res.redirect("/");
+  });
   // Serialization and deserialization here...
   passport.serializeUser((user, done) => {
     done(null, user._id);
   });
   passport.deserializeUser((id, done) => {
     myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-      done(null, doc)
+      done(null, doc);
     });
   });
-  // Be sure to add this...
-}).catch(e => {
-  app.route('/').get((req, res) => {
-    res.render('index', { title: e, message: 'Unable to connect to database' });
+}).catch((e) => {
+  app.route("/").get((req, res) => {
+    res.render("index", { title: e, message: "Unable to connect to database" });
   });
 });
 
-
-
-
+app.use((req, res, next) => {
+  res.status(404).type("text").send("Not Found");
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log('Listening on port ' + PORT);
+  console.log("Listening on port " + PORT);
 });
