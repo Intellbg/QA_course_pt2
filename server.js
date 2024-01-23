@@ -10,8 +10,6 @@ const { ObjectID } = require("mongodb");
 const app = express();
 const LocalStrategy = require("passport-local");
 
-
-
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
@@ -47,8 +45,9 @@ myDB(async (client) => {
         console.log(`User ${username} attempted to log in.`);
         if (err) return done(err);
         if (!user) return done(null, false);
-        if (password !== user.password) return done(null, false);
-        return done(null, user);
+        if (!bcrypt.compareSync(password, user.password)) {
+          return done(null, false);
+        }
       });
     })
   );
