@@ -37,6 +37,7 @@ passport.session();
 
 myDB(async (client) => {
   const myDataBase = await client.db("database").collection("users");
+
   passport.use(
     new LocalStrategy((username, password, done) => {
       myDataBase.findOne({ username: username }, (err, user) => {
@@ -48,9 +49,8 @@ myDB(async (client) => {
       });
     })
   );
-  // Be sure to change the title
+
   app.route("/").get((req, res) => {
-    // Change the response to render the Pug template
     res.render("index", {
       title: "Connected to Database",
       message: "Please login",
@@ -70,19 +70,22 @@ myDB(async (client) => {
   app.route("/profile").get(ensureAuthenticated, (req, res) => {
     res.render("profile", { username: req.user.username });
   });
-  app.route("/logout").get((req, res) => {
-    req.logout();
-    res.redirect("/");
-  });
-  // Serialization and deserialization here...
+
   passport.serializeUser((user, done) => {
     done(null, user._id);
   });
+
   passport.deserializeUser((id, done) => {
     myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
       done(null, doc);
     });
   });
+
+  app.route("/logout").get((req, res) => {
+    req.logout();
+    res.redirect("/");
+  });
+  
 }).catch((e) => {
   app.route("/").get((req, res) => {
     res.render("index", { title: e, message: "Unable to connect to database" });
