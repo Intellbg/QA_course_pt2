@@ -94,8 +94,6 @@ myDB(async (client) => {
               if (err) {
                 res.redirect("/");
               } else {
-                // The inserted document is held within
-                // the ops property of the doc
                 next(null, doc.ops[0]);
               }
             }
