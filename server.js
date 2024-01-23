@@ -3,11 +3,14 @@ require("dotenv").config();
 const passport = require("passport");
 const session = require("express-session");
 const express = require("express");
+const bcrypt = require("bcrypt");
 const myDB = require("./connection");
 const fccTesting = require("./freeCodeCamp/fcctesting.js");
 const { ObjectID } = require("mongodb");
 const app = express();
 const LocalStrategy = require("passport-local");
+
+
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -81,10 +84,11 @@ myDB(async (client) => {
         } else if (user) {
           res.redirect("/");
         } else {
+          const hash = bcrypt.hashSync(req.body.password, 12);
           myDataBase.insertOne(
             {
               username: req.body.username,
-              password: req.body.password,
+              password: hash,
             },
             (err, doc) => {
               if (err) {
