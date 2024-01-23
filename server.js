@@ -1,17 +1,16 @@
 "use strict";
 require("dotenv").config();
-const passport = require("passport");
 const session = require("express-session");
 const express = require("express");
 const fccTesting = require("./freeCodeCamp/fcctesting.js");
-const { ObjectID } = require("mongodb");
 const app = express();
-const LocalStrategy = require("passport-local");
-
+const myDB = require("./connection");
+const routes = require('./routes.js');
+const auth = require('./auth.js');
 
 app.set("view engine", "pug");
 app.set("views", "./views/pug");
-fccTesting(app); //For FCC testing purposes
+fccTesting(app);
 app.use("/public", express.static(process.cwd() + "/public"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -25,9 +24,16 @@ app.use(
   })
 );
 
-passport.initialize();
-passport.session();
+myDB(async (client) => {
+  const myDataBase = await client.db("database").collection("users");
+}).catch((e) => {
+  app.route("/").get((req, res) => {
+    res.render("index", { title: e, message: "Unable to connect to database" });
+  });
+});
 
+auth()
+auth()
 
 
 const PORT = process.env.PORT || 3000;

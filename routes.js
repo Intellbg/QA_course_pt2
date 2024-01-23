@@ -1,5 +1,5 @@
-const bcrypt = require("bcrypt");
-const myDB = require("./connection");
+const passport = require("passport");
+
 
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
@@ -8,22 +8,7 @@ function ensureAuthenticated(req, res, next) {
   res.redirect("/");
 }
 
-myDB(async (client) => {
-  const myDataBase = await client.db("database").collection("users");
-
-  passport.use(
-    new LocalStrategy((username, password, done) => {
-      myDataBase.findOne({ username: username }, (err, user) => {
-        console.log(`User ${username} attempted to log in.`);
-        if (err) return done(err);
-        if (!user) return done(null, false);
-        if (!bcrypt.compareSync(password, user.password)) {
-          return done(null, false);
-        }
-      });
-    })
-  );
-
+module.exports = function (app, myDataBase) {
   app.route("/").get((req, res) => {
     res.render("index", {
       title: "Connected to Database",
@@ -83,25 +68,9 @@ myDB(async (client) => {
     res.redirect("/");
   });
 
-  passport.serializeUser((user, done) => {
-    done(null, user._id);
-  });
 
-  passport.deserializeUser((id, done) => {
-    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-      done(null, doc);
-    });
-  });
 
   app.use((req, res, next) => {
     res.status(404).type("text").send("Not Found");
   });
-}).catch((e) => {
-  app.route("/").get((req, res) => {
-    res.render("index", { title: e, message: "Unable to connect to database" });
-  });
-});
-
-module.exports = function (app, myDataBase) {
-
-}
+};
