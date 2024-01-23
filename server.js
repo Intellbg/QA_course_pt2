@@ -3,10 +3,12 @@ require("dotenv").config();
 const session = require("express-session");
 const express = require("express");
 const fccTesting = require("./freeCodeCamp/fcctesting.js");
-const app = express();
 const myDB = require("./connection");
-const routes = require('./routes.js');
-const auth = require('./auth.js');
+const routes = require("./routes.js");
+const auth = require("./auth.js");
+const passport = require("passport");
+
+const app = express();
 
 app.set("view engine", "pug");
 app.set("views", "./views/pug");
@@ -23,18 +25,18 @@ app.use(
     cookie: { secure: false },
   })
 );
+app.use(passport.initialize());
+app.use(passport.session());
 
 myDB(async (client) => {
   const myDataBase = await client.db("database").collection("users");
+  auth(app, myDataBase);
+  routes(app, myDataBase);
 }).catch((e) => {
   app.route("/").get((req, res) => {
     res.render("index", { title: e, message: "Unable to connect to database" });
   });
 });
-
-auth()
-auth()
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

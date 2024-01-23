@@ -4,8 +4,18 @@ const bcrypt = require("bcrypt");
 const { ObjectID } = require("mongodb");
 
 module.exports = function (app, myDataBase) {
-  passport.initialize();
-  passport.session();
+
+  passport.serializeUser((user, done) => {
+    done(null, user._id);
+  });
+
+  passport.deserializeUser((id, done) => {
+    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
+      if (err) return console.error(err);
+      done(null, doc);
+    });
+  });
+  
   passport.use(
     new LocalStrategy((username, password, done) => {
       myDataBase.findOne({ username: username }, (err, user) => {
@@ -19,13 +29,4 @@ module.exports = function (app, myDataBase) {
     })
   );
 
-  passport.serializeUser((user, done) => {
-    done(null, user._id);
-  });
-
-  passport.deserializeUser((id, done) => {
-    myDataBase.findOne({ _id: new ObjectID(id) }, (err, doc) => {
-      done(null, doc);
-    });
-  });
 };
