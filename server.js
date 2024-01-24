@@ -8,10 +8,23 @@ const routes = require("./routes.js");
 const auth = require("./auth.js");
 const passport = require("passport");
 
+const MongoStore = require('connect-mongo')(session);
+const URI = process.env.MONGO_URI;
+const store = new MongoStore({ url: URI });
+
 const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
-
+io.use(
+  passportSocketIo.authorize({
+    cookieParser: cookieParser,
+    key: 'express.sid',
+    secret: process.env.SESSION_SECRET,
+    store: store,
+    success: onAuthorizeSuccess,
+    fail: onAuthorizeFail
+  })
+);
 app.set("view engine", "pug");
 app.set("views", "./views/pug");
 fccTesting(app);
@@ -34,8 +47,15 @@ myDB(async (client) => {
   const myDataBase = await client.db("database").collection("users");
   auth(app, myDataBase);
   routes(app, myDataBase);
+  let currentUsers = 0;
   io.on("connection", (socket) => {
+    ++currentUsers;
     console.log("A user has connected");
+    io.emit("user count", currentUsers);
+    socket.on("disconnect", () => {
+      --currentUsers;
+      io.emit("user count", currentUsers);
+    });
   });
 }).catch((e) => {
   app.route("/").get((req, res) => {
