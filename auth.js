@@ -22,10 +22,13 @@ module.exports = function (app, myDataBase) {
       myDataBase.findOne({ username: username }, (err, user) => {
         console.log(`User ${username} attempted to log in.`);
         if (err) return done(err);
+        console.log(`User ${username} attempted to log in2.`);
         if (!user) return done(null, false);
+        console.log(`User ${username} attempted to log in3.`);
         if (!bcrypt.compareSync(password, user.password)) {
           return done(null, false);
         }
+        return done(null, user);
       });
     })
   );
