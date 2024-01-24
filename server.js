@@ -18,7 +18,6 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 
-
 function onAuthorizeSuccess(data, accept) {
   console.log("successful connection to socket.io");
 
@@ -71,9 +70,12 @@ myDB(async (client) => {
   io.on("connection", (socket) => {
     ++currentUsers;
     console.log("A user has connected");
-    io.emit("user count", currentUsers);
     console.log("user " + socket.request.user.username + " connected");
-    
+    io.emit("user", {
+      username: socket.request.user.username,
+      currentUsers,
+      connected: true,
+    });
     socket.on("disconnect", () => {
       --currentUsers;
       io.emit("user count", currentUsers);
