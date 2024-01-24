@@ -71,6 +71,11 @@ myDB(async (client) => {
     ++currentUsers;
     console.log("A user has connected");
     console.log("user " + socket.request.user.username + " connected");
+    socket.on("chat message", (message) => {
+      io.emit("chat message", (message) => {
+        username: socket.request.user.username, message;
+      });
+    });
     io.emit("user", {
       username: socket.request.user.username,
       currentUsers,
