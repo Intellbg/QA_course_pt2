@@ -8,10 +8,9 @@ const routes = require("./routes.js");
 const auth = require("./auth.js");
 const passport = require("passport");
 
-
 const app = express();
-const http = require('http').createServer(app);
-const io = require('socket.io')(http);
+const http = require("http").createServer(app);
+const io = require("socket.io")(http);
 
 app.set("view engine", "pug");
 app.set("views", "./views/pug");
@@ -35,6 +34,9 @@ myDB(async (client) => {
   const myDataBase = await client.db("database").collection("users");
   auth(app, myDataBase);
   routes(app, myDataBase);
+  io.on("connection", (socket) => {
+    console.log("A user has connected");
+  });
 }).catch((e) => {
   app.route("/").get((req, res) => {
     res.render("index", { title: e, message: "Unable to connect to database" });
